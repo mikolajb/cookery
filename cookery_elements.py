@@ -28,7 +28,11 @@ class Activity:
         self.condition = None
 
     def execute(self, implementation, value):
-        return implementation['actions'][self.action.name](value)
+        subjects = [(s.name, s.arguments) for s in self.subjects]
+        print(subjects)
+        subjects = [implementation['subjects'][s[0]](s[1]) for s in subjects]
+        action_func = implementation['actions'][self.action.name]
+        return action_func(value, subjects, " ".join(self.action.arguments))
 
     def pretty_print(self):
         print('action:', self.action)

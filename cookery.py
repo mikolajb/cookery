@@ -6,6 +6,7 @@ import ply.yacc as yacc
 import ply.lex as lex
 import click
 import runpy
+import re
 
 
 class Cookery:
@@ -50,35 +51,51 @@ class Cookery:
         return module.execute(self, 'first value')
 
     def subject(self, type, regexp=None):
-        def s(func):
-            self.subjects[func.__name__] = func
+        print('declaring subject:', type, regexp)
+
+        def decorator(func):
+            self.subjects[func.__name__.capitalize()] = func
 
             @wraps(func)
-            def wrapper(*args, **kwargs):
-                return func(*args, **kwargs)
-            return wrapper
-        return s
+            def wrapper(arguments):
+                matched = re.match(regexp, arguments)
+                if matched:
+                    return func(*matched.groups())
+                else:
+                    pass  # handle unmached data
+                return func
+        return decorator
 
     def action(self, regexp=None):
-        def s(func):
+        def decorator(func):
             self.actions[func.__name__] = func
 
             @wraps(func)
-            def wrapper(*args, **kwargs):
-                return func(*args, **kwargs)
-            return wrapper
-        return s
+            def wrapper(value, subject, arguments):
+                if regexp:
+                    matched = re.match(regexp, arguments)
+                    if matched:
+                        return func(value, subject, *matched.groups())
+                    else:
+                        pass  # handle unmached data
+                return func
+        return decorator
 
     def condition(self, regexp=None):
-        def s(func):
+        def decorator(func):
             self.actions[func.__name__] = func
 
             @wraps(func)
-            def wrapper(*args, **kwargs):
-                return func(*args, **kwargs)
+            def wrapper(value, arguments):
+                if regexp:
+                    matched = re.match(regexp, arguments)
+                    if matched:
+                        return func(value, matched.groups())
+                    else:
+                        pass  # handle unmached data
+                return func(value)
             return wrapper
-        return s
-
+        return decorator
 
 
 @click.group()
