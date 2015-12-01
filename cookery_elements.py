@@ -7,7 +7,9 @@ class Module:
 
         self.activities = activities or []
 
-    def execute(self, value):
+    def execute(self, implementation, value):
+        for a in self.activities:
+            value = a.execute(implementation, value)
         return value
 
     def pretty_print(self):
@@ -24,6 +26,9 @@ class Activity:
         self.action = None
         self.subjects = None
         self.condition = None
+
+    def execute(self, implementation, value):
+        return implementation['actions'][self.action.name](value)
 
     def pretty_print(self):
         print('action:', self.action)

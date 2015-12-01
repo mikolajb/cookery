@@ -1,9 +1,11 @@
 from cookery_parse import CookeryParser
 from cookery_lex import CookeryLexer
 from os import path, makedirs
+from functools import wraps
 import ply.yacc as yacc
 import ply.lex as lex
 import click
+import runpy
 
 
 class Cookery:
@@ -11,21 +13,72 @@ class Cookery:
     def __init__(self):
         self.lexer = lex.lex(module=CookeryLexer())
         self.parser = yacc.yacc(module=CookeryParser())
+        self.subjects = {}
+        self.actions = {}
+        self.conditions = {}
 
-    def process_string(self, expression):
-        t = self.parser.parse(expression, lexer=self.lexer)
-        t.pretty_print()
+    def process_expression(self, expression):
+        m = self.parser.parse(expression, lexer=self.lexer)
+        # m.pretty_print()
         self.parser.restart()
         self.lexer.begin('INITIAL')
-        for m in t.modules.keys():
-            t.modules[m] = self.process_file(t.modules[m])
-        return t
+        self.process_modules(m)
+        return m
+
+    def process_modules(self, module):
+        for m in module.modules.keys():
+            m.modules[m] = self.process_file(m.modules[m])
+            self.process_modules(m.modules[m])
 
     def process_file(self, file):
-        return self.process_string(file.read())
+        return self.process_expression(file.read())
 
-    def add_module(self, file, name):
-        self.modules[name] = self.process_file(file)
+    def execute_file(self, file):
+        module = self.process_file(file)
+
+        implementation = path.splitext(file.name)[0] + '.py'
+        if path.exists(implementation):
+            runpy.run_path(implementation, {'cookery': self})
+
+        return module.execute({'actions': self.actions,
+                               'subjects': self.subjects,
+                               'conditions': self.conditions},
+                              'first value')
+
+    def execute_expression(self, string):
+        module = self.process_expression(string)
+        return module.execute(self, 'first value')
+
+    def subject(self, type, regexp=None):
+        def s(func):
+            self.subjects[func.__name__] = func
+
+            @wraps(func)
+            def wrapper(*args, **kwargs):
+                return func(*args, **kwargs)
+            return wrapper
+        return s
+
+    def action(self, regexp=None):
+        def s(func):
+            self.actions[func.__name__] = func
+
+            @wraps(func)
+            def wrapper(*args, **kwargs):
+                return func(*args, **kwargs)
+            return wrapper
+        return s
+
+    def condition(self, regexp=None):
+        def s(func):
+            self.actions[func.__name__] = func
+
+            @wraps(func)
+            def wrapper(*args, **kwargs):
+                return func(*args, **kwargs)
+            return wrapper
+        return s
+
 
 
 @click.group()
@@ -41,15 +94,17 @@ class Cookery:
               help='Prints configuration and exits without executing.')
 @click.pass_context
 def toolkit(ctx, config, grammar_file, print_config):
-    print('toolkit', config, grammar_file, print_config)
+    # print('toolkit', config, grammar_file, print_config)
+    pass
 
 
 @toolkit.command()
 @click.argument('file', type=click.File('r'))
 @click.pass_context
-def run(ctx):
+def run(ctx, file):
     'Executes a file.'
-    print('rrrruuuun')
+    cookery = Cookery()
+    print(cookery.execute_file(file))
 
 
 @toolkit.command()
@@ -58,7 +113,7 @@ def run(ctx):
 def eval(ctx, expression):
     'Evaluates an expression.'
     c = Cookery()
-    return c.process_string(expression)
+    return c.process_expression(expression)
 
 
 @toolkit.command()
@@ -120,7 +175,8 @@ if __name__ == "__main__":
     #     'read.',
     #     'Test = read File with something.',
     #     'read File /tmp/test.txt.',
-    #     'Test = read very http://example.com slowly File file:///tmp/test.txt with something.',
+    #     '''Test = read very http://example.com slowly File
+    #       file:///tmp/test.txt with something.''',
     #     'read very slowly.',
     #     'read very slowly with something.',
     #     'read very slowly with something else like this ftp://test.txt.',
