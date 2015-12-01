@@ -5,21 +5,28 @@ import ply.yacc as yacc
 import ply.lex as lex
 import click
 
+
 class Cookery:
+
     def __init__(self):
         self.lexer = lex.lex(module=CookeryLexer())
         self.parser = yacc.yacc(module=CookeryParser())
-        self.modules = {}
+
     def process_string(self, expression):
         t = self.parser.parse(expression, lexer=self.lexer)
         t.pretty_print()
         self.parser.restart()
         self.lexer.begin('INITIAL')
+        for m in t.modules.keys():
+            t.modules[m] = self.process_file(t.modules[m])
         return t
+
     def process_file(self, file):
-        return self.process_string(file.read(), start_value)
+        return self.process_string(file.read())
+
     def add_module(self, file, name):
         self.modules[name] = self.process_file(file)
+
 
 @click.group()
 @click.option('-c', '--config',
@@ -36,12 +43,14 @@ class Cookery:
 def toolkit(ctx, config, grammar_file, print_config):
     print('toolkit', config, grammar_file, print_config)
 
+
 @toolkit.command()
 @click.argument('file', type=click.File('r'))
 @click.pass_context
 def run(ctx):
     'Executes a file.'
     print('rrrruuuun')
+
 
 @toolkit.command()
 @click.argument('expression')
@@ -50,6 +59,7 @@ def eval(ctx, expression):
     'Evaluates an expression.'
     c = Cookery()
     return c.process_string(expression)
+
 
 @toolkit.command()
 @click.argument('name')
@@ -64,14 +74,19 @@ def new(ctx, name):
         makedirs(name)
 
     empty_project = {
-        '{}.py'.format(name): 'action("test", :out) do |data|\n  puts "Just a test, passing data from subject"\n  data\nend\n\nsubject("Test", nil, "test") do\n  "fake result".bytes.map { |i| (i >= 97 and i <= 122 and rand > 0.5) ? i - 32 : i }.pack("c*")\nend',
-        '{}.cookery'.format(name): 'test Test.',
-        '{}.toml'.format(name): '[actions.test]\njust_an_example = true',
+        '{}.py'.format(f_name):
+        'action("test", :out) do |data|\n  puts "Just a test, passing data '
+        'from subject"\n  data\nend\n\nsubject("Test", nil, "test") do\n  '
+        '"fake result".bytes.map { |i| (i >= 97 and i <= 122 and rand > 0.5) '
+        '? i - 32 : i }.pack("c*")\nend',
+        '{}.cookery'.format(f_name): 'test Test.',
+        '{}.toml'.format(f_name): '[actions.test]\njust_an_example = true',
     }
 
     for file, content in empty_project.items():
         with open(path.join(name, file), 'w') as f:
             f.write(content)
+
 
 @toolkit.command()
 @click.pass_context
