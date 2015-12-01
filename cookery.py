@@ -83,18 +83,17 @@ class Cookery:
 
     def condition(self, regexp=None):
         def decorator(func):
-            self.actions[func.__name__] = func
+            self.conditions[func.__name__] = func
 
             @wraps(func)
             def wrapper(value, arguments):
                 if regexp:
                     matched = re.match(regexp, arguments)
                     if matched:
-                        return func(value, matched.groups())
+                        return func(value, *matched.groups())
                     else:
                         pass  # handle unmached data
-                return func(value)
-            return wrapper
+                return func
         return decorator
 
 
@@ -195,6 +194,7 @@ if __name__ == "__main__":
     #     '''Test = read very http://example.com slowly File
     #       file:///tmp/test.txt with something.''',
     #     'read very slowly.',
+    #     'read File with test.',
     #     'read very slowly with something.',
     #     'read very slowly with something else like this ftp://test.txt.',
     #     'Test = read File1 and File2 with something.',
@@ -202,7 +202,7 @@ if __name__ == "__main__":
     #     'Test = read File1 /tmp/test.txt and File2 with something.',
     #     'Test = read File1 /tmp/test.txt and File2 /tmp/test.aaa.',
     #     'T[] = read.',
-    #     'read T[].'
+    #     'read T[].',
     # ]
 
     # for expression in expressions:

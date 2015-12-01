@@ -44,6 +44,14 @@ class CookeryParser(object):
         p[0].action = p[1]
         p[0].condition = p[2]
 
+    def p_activity_4(self, p):
+        '''activity : action subject IF condition END
+                    | action subject WITH condition END'''
+        p[0] = Activity()
+        p[0].action = p[1]
+        p[0].subjects = p[2]
+        p[0].condition = p[4]
+
     def p_activity_5(self, p):
         'activity : VARIABLE "=" action END'
         p[0] = Activity()

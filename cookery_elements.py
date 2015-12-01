@@ -24,19 +24,21 @@ class Activity:
     def __init__(self):
         self.variable = None
         self.action = None
-        self.subjects = None
+        self.subjects = []
         self.condition = None
 
     def execute(self, implementation, value):
         subjects = [(s.name, s.arguments) for s in self.subjects]
-        print(subjects)
         subjects = [implementation['subjects'][s[0]](s[1]) for s in subjects]
+        condition_func = implementation['conditions'][self.condition.name]
+        subjects = [condition_func(s) for s in subjects]
         action_func = implementation['actions'][self.action.name]
         return action_func(value, subjects, " ".join(self.action.arguments))
 
     def pretty_print(self):
         print('action:', self.action)
         print('condition:', self.condition)
+        print('subjects:', self.subjects)
         if self.subjects:
             print('subjects:')
             for s in self.subjects:
@@ -44,7 +46,7 @@ class Activity:
 
 
 class Action:
-    def __init__(self, name, arguments=None):
+    def __init__(self, name, arguments=[]):
         self.name = name
         self.arguments = arguments
 
@@ -53,7 +55,7 @@ class Action:
 
 
 class Subject:
-    def __init__(self, name, arguments=None):
+    def __init__(self, name, arguments=[]):
         self.name = name
         self.arguments = arguments or []
 
@@ -62,7 +64,7 @@ class Subject:
 
 
 class Condition:
-    def __init__(self, name, arguments=None):
+    def __init__(self, name, arguments=[]):
         self.name = name
         self.arguments = arguments or []
 
