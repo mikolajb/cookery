@@ -7,7 +7,7 @@ class Module:
 
         self.activities = activities or []
 
-    def execute(self, implementation, value):
+    def execute(self, implementation, value=None):
         for a in self.activities:
             value = a.execute(implementation, value)
         return value
@@ -20,6 +20,10 @@ class Module:
             a.pretty_print()
 
 
+class NoImplementation(Exception):
+    pass
+
+
 class Activity:
     def __init__(self):
         self.variable = None
@@ -28,17 +32,26 @@ class Activity:
         self.condition = None
 
     def execute(self, implementation, value):
-        subjects = [(s.name, s.arguments) for s in self.subjects]
+        subjects = [(s.name, " ".join(s.arguments)) for s in self.subjects]
         subjects = [implementation['subjects'][s[0]](s[1]) for s in subjects]
-        condition_func = implementation['conditions'][self.condition.name]
-        subjects = [condition_func(s) for s in subjects]
+        if self.condition:
+            if self.condition.name not in implementation['conditions']:
+                raise NoImplementation()
+            condition_func = implementation['conditions'][self.condition.name]
+            subjects = [condition_func(s) for s in subjects]
+        if self.action.name not in implementation['actions']:
+            raise NoImplementation()
         action_func = implementation['actions'][self.action.name]
-        return action_func(value, subjects, " ".join(self.action.arguments))
+        if value:
+            subjects.insert(0, value)
+        if isinstance(self.action.arguments, list):
+            self.action.arguments = " ".join(self.action.arguments)
+        return action_func(subjects, self.action.arguments)
 
     def pretty_print(self):
         print('action:', self.action)
         print('condition:', self.condition)
-        print('subjects:', self.subjects)
+        print('subjects:', len(self.subjects))
         if self.subjects:
             print('subjects:')
             for s in self.subjects:

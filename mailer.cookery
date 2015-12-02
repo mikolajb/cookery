@@ -1,0 +1,4 @@
+send_email {"to"      : "......@gmail.com",
+            "from"    : "......@gmail.com",
+            "subject" : "Results",
+            "body"    : "Results for language test"} File message.txt.

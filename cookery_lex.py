@@ -1,5 +1,3 @@
-import ply.lex as lex
-
 class CookeryLexer(object):
 
     keywords = ('import', 'and', 'if', 'with', 'as')
@@ -31,7 +29,8 @@ class CookeryLexer(object):
         t.lexer.push_state('import')
         return t
 
-    t_import_PATH = r'(\'[\w\/_.-]+([\w\/_.-]+)*\')|(\"[\w\/_.-]+([\w\/_.-]+)*\")'
+    t_import_PATH = r'(\'[\w\/_.-]+([\w\/_.-]+)*\')|' + \
+                    r'(\"[\w\/_.-]+([\w\/_.-]+)*\")'
 
     def t_import_MODULE(self, t):
         r'\w+'
@@ -54,7 +53,7 @@ class CookeryLexer(object):
         return t
 
     def t_subject_ACTION_ARGUMENT(self, t):
-        r'[^A-Z{][^ ]+(?!\Z)'
+        r'[^A-Z{\.](:?(?!(:?\.\s)|(:?\.\Z))[^ ])*'
         if t.value in CookeryLexer.keywords:
             t.type = t.value.upper()
             if t.type in ['IF', 'WITH']:
@@ -67,7 +66,8 @@ class CookeryLexer(object):
         return t
 
     def t_subjectargument_SUBJECT_ARGUMENT(self, t):
-        r'[^ {]+(?!\Z)'
+        r'(:?(?!(:?\.\s)|(:?\.\Z))[^ {])+'
+        print(repr(t.value))
         if t.value in CookeryLexer.keywords:
             t.type = t.value.upper()
             if t.type in ['IF', 'WITH']:
@@ -82,11 +82,12 @@ class CookeryLexer(object):
         return t
 
     def t_conditionargument_CONDITION_ARGUMENT(self, t):
-        r'[^ {]+(?!\Z)'
+        r'(:?(?!(:?\.\s)|(:?\.\Z))[^ {])+'
         return t
 
     def t_ANY_END(self, t):
         r'\.'
+        t.lexer.begin('INITIAL')
         return t
 
     t_ANY_JSON = r'{[^}]+}'
@@ -96,9 +97,8 @@ class CookeryLexer(object):
     t_ANY_ignore = ' \t'
     t_ANY_ignore_COMMENT = r'\#.*'
 
-    def t_newline(self, t):
+    def t_ANY_newline(self, t):
         r'\n+'
-        print('newline')
         t.lexer.lineno += t.value.count("\n")
 
     def t_ANY_error(self, t):

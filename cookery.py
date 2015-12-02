@@ -20,7 +20,7 @@ class Cookery:
 
     def process_expression(self, expression):
         m = self.parser.parse(expression, lexer=self.lexer)
-        # m.pretty_print()
+        m.pretty_print()
         self.parser.restart()
         self.lexer.begin('INITIAL')
         self.process_modules(m)
@@ -43,57 +43,60 @@ class Cookery:
 
         return module.execute({'actions': self.actions,
                                'subjects': self.subjects,
-                               'conditions': self.conditions},
-                              'first value')
+                               'conditions': self.conditions})
 
     def execute_expression(self, string):
         module = self.process_expression(string)
         return module.execute(self, 'first value')
 
     def subject(self, type, regexp=None):
-        print('declaring subject:', type, regexp)
-
         def decorator(func):
-            self.subjects[func.__name__.capitalize()] = func
-
             @wraps(func)
             def wrapper(arguments):
+                if regexp == 'JSON':
+                    return func(arguments)
                 matched = re.match(regexp, arguments)
                 if matched:
                     return func(*matched.groups())
                 else:
                     pass  # handle unmached data
-                return func
+                return func()
+            self.subjects[func.__name__.capitalize()] = wrapper
+            return wrapper
         return decorator
 
     def action(self, regexp=None):
         def decorator(func):
-            self.actions[func.__name__] = func
-
             @wraps(func)
-            def wrapper(value, subject, arguments):
+            def wrapper(subjects, arguments):
+                if regexp == 'JSON':
+                    return func(subjects, arguments)
                 if regexp:
                     matched = re.match(regexp, arguments)
                     if matched:
-                        return func(value, subject, *matched.groups())
+                        return func(subjects, *matched.groups())
                     else:
                         pass  # handle unmached data
-                return func
+                return func(subjects, None)
+            self.actions[func.__name__] = wrapper
+            return wrapper
         return decorator
 
     def condition(self, regexp=None):
         def decorator(func):
-            self.conditions[func.__name__] = func
-
             @wraps(func)
             def wrapper(value, arguments):
+                if regexp == 'JSON':
+                    return func(value, arguments)
                 if regexp:
                     matched = re.match(regexp, arguments)
                     if matched:
                         return func(value, *matched.groups())
                     else:
                         pass  # handle unmached data
-                return func
+                return func(value)
+            self.conditions[func.__name__] = func
+            return wrapper
         return decorator
 
 
@@ -120,7 +123,7 @@ def toolkit(ctx, config, grammar_file, print_config):
 def run(ctx, file):
     'Executes a file.'
     cookery = Cookery()
-    print(cookery.execute_file(file))
+    print('returned value:', cookery.execute_file(file))
 
 
 @toolkit.command()
@@ -165,50 +168,57 @@ def get(ctx):
     'Gets Cookery project from a repository.'
     print('getttt')
 
+@toolkit.command()
+def test():
+    lexer = lex.lex(module=CookeryLexer())
+    parser = yacc.yacc(module=CookeryParser())
+
+    expressions = [
+        "do.",
+        "do B.",
+        "A = do B.",
+        "do Aa and Bb.",
+        "do {'a': 2}.",
+        "do Aaa {'a': 2}.",
+        '''create-email {"to"      : "mikolajb@gmail.com",
+                     "from"    : "mikolajb@gmail.com",
+                     "subject" : "Results",
+                     "body"    : "Results for language test"}.''',
+        'import "a/a" as b a.',
+        'import \'b\' as b a.',
+        '''import \'a\' as a
+           import \'b\' as b
+           d.''',
+        'Test = read File.',
+        'read with something.',
+        'read.',
+        'Test = read File with something.',
+        'read File /tmp/test.txt.',
+        '''Test = read very http://example.com slowly File
+          file:///tmp/test.txt with something.''',
+        'read very slowly.',
+        'read File with test.',
+        'read very slowly with something.',
+        'read very slowly with something else like this ftp://test.txt.',
+        'Test = read File1 and File2 with something.',
+        'Test = read File1 and File2[] and File3.',
+        'Test = read File1 /tmp/test.txt and File2 with something.',
+        'Test = read File1 /tmp/test.txt and File2 /tmp/test.aaa.',
+        'T[] = read.',
+        'read T[].',
+        'do File. do File. do File.',
+    ]
+
+    for expression in expressions:
+        debug = False
+        print('--------------------------------------------------')
+        print("parsing:", expression)
+        print()
+        t = parser.parse(expression, lexer=lexer, debug=debug)
+        t.pretty_print()
+        parser.restart()
+        lexer.begin('INITIAL')
+
+
 if __name__ == "__main__":
     toolkit()
-    # lexer = lex.lex(module=CookeryLexer())
-    # parser = yacc.yacc(module=CookeryParser())
-
-    # expressions = [
-    #     "do.",
-    #     "do B.",
-    #     "A = do B.",
-    #     "do Aa and Bb.",
-    #     "do {'a': 2}.",
-    #     "do Aaa {'a': 2}.",
-    #     '''create-email {"to"      : "mikolajb@gmail.com",
-    #                  "from"    : "mikolajb@gmail.com",
-    #                  "subject" : "Results",
-    #                  "body"    : "Results for language test"}.''',
-    #     'import "a/a" as b a.',
-    #     'import \'b\' as b a.',
-    #     '''import \'a\' as a
-    #        import \'b\' as b
-    #        d.''',
-    #     'Test = read File.',
-    #     'read with something.',
-    #     'read.',
-    #     'Test = read File with something.',
-    #     'read File /tmp/test.txt.',
-    #     '''Test = read very http://example.com slowly File
-    #       file:///tmp/test.txt with something.''',
-    #     'read very slowly.',
-    #     'read File with test.',
-    #     'read very slowly with something.',
-    #     'read very slowly with something else like this ftp://test.txt.',
-    #     'Test = read File1 and File2 with something.',
-    #     'Test = read File1 and File2[] and File3.',
-    #     'Test = read File1 /tmp/test.txt and File2 with something.',
-    #     'Test = read File1 /tmp/test.txt and File2 /tmp/test.aaa.',
-    #     'T[] = read.',
-    #     'read T[].',
-    # ]
-
-    # for expression in expressions:
-    #     debug = False
-    #     print("parsing:", expression)
-    #     t = parser.parse(expression, lexer=lexer, debug=debug)
-    #     t.pretty_print()
-    #     parser.restart()
-    #     lexer.begin('INITIAL')

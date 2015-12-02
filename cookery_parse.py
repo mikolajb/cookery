@@ -42,7 +42,7 @@ class CookeryParser(object):
                     | action WITH condition END'''
         p[0] = Activity()
         p[0].action = p[1]
-        p[0].condition = p[2]
+        p[0].condition = p[3]
 
     def p_activity_4(self, p):
         '''activity : action subject IF condition END
@@ -146,7 +146,6 @@ class CookeryParser(object):
 
     def p_error(self, p):
         if p:
-            print(p)
             print("Syntax error at '%s'" % p.value)
         else:
             print("Syntax error at EOF")
