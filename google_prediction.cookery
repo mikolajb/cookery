@@ -1,0 +1,15 @@
+#import "./mailer" as mailer
+
+#MITLicense = load RemoteFile https://github.com/mikolajb/cookery/raw/master/LICENSE.
+#EmacsLicense = load RemoteFile https://raw.githubusercontent.com/emacs-mirror/emacs/master/README.
+#google-prediction MITLicense and EmacsLicense.
+#mailer.
+
+import do as do
+import mailer as mail
+
+A = do RemoteFile http://localhost:8080/files/aaa.txt.
+#https://httpbin.org/get.#https://raw.githubusercontent.com/mikolajb/cookery/master/LICENSE.
+B = do RemoteFile http://localhost:8080/files/bbb.txt.
+#https://raw.githubusercontent.com/mikolajb/pumpkin/master/LICENSE.
+mail A and B.
