@@ -7,43 +7,75 @@ import ply.lex as lex
 import click
 import runpy
 import re
+import inspect
+from exceptions import \
+    WrongMatch, \
+    WrongNumberOfArguments, \
+    CannotImportModule, \
+    NoImplementation
 
 
 class Cookery:
 
-    def __init__(self):
-        self.lexer = lex.lex(module=CookeryLexer())
+    def __init__(self, debug_lexer=False, debug_parser=False):
+        self.lexer = lex.lex(module=CookeryLexer(), debug=debug_lexer)
+        self.debug_parser = debug_parser
         self.parser = yacc.yacc(module=CookeryParser())
         self.subjects = {}
         self.actions = {}
         self.conditions = {}
 
     def process_expression(self, expression):
-        m = self.parser.parse(expression, lexer=self.lexer)
+        m = self.parser.parse(expression,
+                              lexer=self.lexer,
+                              debug=self.debug_parser)
         m.pretty_print()
         self.parser.restart()
         self.lexer.begin('INITIAL')
-        self.process_modules(m)
+        self.process_imports(m)
+        print('imports:', m.modules)
         return m
 
-    def process_modules(self, module):
+    def process_imports(self, module):
         for m in module.modules.keys():
-            m.modules[m] = self.process_file(m.modules[m])
-            self.process_modules(m.modules[m])
+            module.modules[m] = self.load_module(module.modules[m])
+            self.process_imports(module.modules[m])
 
     def process_file(self, file):
+        "Processes Cookery file"
+        if isinstance(file, str):
+            name, ext = path.splitext(file)
+            if ext == '' or ext == '.cookery':
+                file = name + '.cookery'
+                if path.exists(file):
+                    file = open(file, 'r')
+                else:
+                    raise CannotImportModule
+            else:
+                raise CannotImportModule
         return self.process_expression(file.read())
 
-    def execute_file(self, file):
-        module = self.process_file(file)
-
-        implementation = path.splitext(file.name)[0] + '.py'
+    def process_implementation(self, file):
+        "Processes Cookery middleware file"
+        implementation = path.splitext(
+            file if isinstance(file, str) else file.name)[0] + '.py'
         if path.exists(implementation):
             runpy.run_path(implementation, {'cookery': self})
+        else:
+            raise NoImplementation()
 
-        return module.execute({'actions': self.actions,
-                               'subjects': self.subjects,
-                               'conditions': self.conditions})
+        return implementation
+
+    def load_module(self, file):
+        module = self.process_file(file)
+        self.process_implementation(file)
+
+        return module
+
+    def execute_file(self, file):
+        module = self.load_module(file)
+
+        return module.execute(self)
 
     def execute_expression(self, string):
         module = self.process_expression(string)
@@ -61,23 +93,34 @@ class Cookery:
                 else:
                     pass  # handle unmached data
                 return func()
-            self.subjects[func.__name__.capitalize()] = wrapper
+            # changes func name from foo_bar to FooBar
+            func_name = "".join([e.capitalize() for e in
+                                 func.__name__.split('_')])
+            self.subjects[func_name] = wrapper
             return wrapper
         return decorator
 
     def action(self, regexp=None):
         def decorator(func):
             @wraps(func)
-            def wrapper(subjects, arguments):
+            def wrapper(subjects=None, arguments=None):
+                parameters = len(inspect.signature(func).parameters)
+
                 if regexp == 'JSON':
-                    return func(subjects, arguments)
+                    if parameters == 2:
+                        return func(subjects, arguments)
+                    else:
+                        raise WrongNumberOfArguments()
                 if regexp:
                     matched = re.match(regexp, arguments)
                     if matched:
-                        return func(subjects, *matched.groups())
+                        if parameters == 1 + len(matched.groups()):
+                            return func(subjects, *matched.groups())
+                        else:
+                            raise WrongNumberOfArguments()
                     else:
-                        pass  # handle unmached data
-                return func(subjects, None)
+                        raise WrongMatch()
+                return func(subjects, *([None] * (parameters - 1)))
             self.actions[func.__name__] = wrapper
             return wrapper
         return decorator
@@ -111,8 +154,16 @@ class Cookery:
               is_flag=True,
               default=False,
               help='Prints configuration and exits without executing.')
+@click.option('--debug-lexer',
+              is_flag=True,
+              default=False,
+              help='Runs lexer in debug mode')
+@click.option('--debug-parser',
+              is_flag=True,
+              default=False,
+              help='Runs parser in debug mode')
 @click.pass_context
-def toolkit(ctx, config, grammar_file, print_config):
+def toolkit(ctx, config, grammar_file, print_config, debug_lexer, debug_parser):
     # print('toolkit', config, grammar_file, print_config)
     pass
 
@@ -122,7 +173,8 @@ def toolkit(ctx, config, grammar_file, print_config):
 @click.pass_context
 def run(ctx, file):
     'Executes a file.'
-    cookery = Cookery()
+    cookery = Cookery(ctx.parent.params['debug_lexer'],
+                      ctx.parent.params['debug_parser'])
     print('returned value:', cookery.execute_file(file))
 
 
@@ -167,6 +219,7 @@ def new(ctx, name):
 def get(ctx):
     'Gets Cookery project from a repository.'
     print('getttt')
+
 
 @toolkit.command()
 def test():

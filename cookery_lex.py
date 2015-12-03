@@ -1,3 +1,6 @@
+from ply.lex import TOKEN
+
+
 class CookeryLexer(object):
 
     keywords = ('import', 'and', 'if', 'with', 'as')
@@ -18,6 +21,7 @@ class CookeryLexer(object):
 
     states = (
         ('import', 'exclusive'),
+        ('importmodule', 'exclusive'),
         ('subject', 'exclusive'),
         ('subjectargument', 'exclusive'),
         ('condition', 'exclusive'),
@@ -26,18 +30,29 @@ class CookeryLexer(object):
 
     def t_ANY_IMPORT(self, t):
         r'import'
-        t.lexer.push_state('import')
+        t.lexer.begin('import')
         return t
 
-    t_import_PATH = r'(\'[\w\/_.-]+([\w\/_.-]+)*\')|' + \
-                    r'(\"[\w\/_.-]+([\w\/_.-]+)*\")'
+    import_path = r'[\w\/_\.-]+'
+    wrapped_path = r'(\'' + import_path + r'\')|' + \
+                   r'(\"' + import_path + r'\")|' + \
+                   r'(' + import_path + ')'
 
-    def t_import_MODULE(self, t):
+    @TOKEN(wrapped_path)
+    def t_import_PATH(self, t):
+        if t.value in CookeryLexer.keywords:
+            t.type = t.value.upper()
+        else:
+            t.value = t.value.strip("'").strip('"')
+            t.lexer.begin('importmodule')
+        return t
+
+    def t_importmodule_MODULE(self, t):
         r'\w+'
         if t.value in CookeryLexer.keywords:
             t.type = t.value.upper()
         else:
-            t.lexer.pop_state()
+            t.lexer.begin('INITIAL')
         return t
 
     def t_INITIAL_VARIABLE(self, t):
