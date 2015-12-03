@@ -5,10 +5,11 @@ def send_email(subjects, args):
     from email.mime.text import MIMEText
     from email.mime.multipart import MIMEMultipart
 
-    msg = MIMEMultipart(args['body'])
+    msg = MIMEMultipart()
     msg['Subject'] = args['subject']
     msg['From'] = args['from']
     msg['To'] = args['to']
+    msg.attach(MIMEText(args['body']))
     for i in range(len(subjects)):
         atta = MIMEText(subjects[i])
         atta.add_header('Content-Disposition',
