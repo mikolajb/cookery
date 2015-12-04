@@ -76,16 +76,22 @@ class Cookery:
     def load_module(self, file):
         module = self.process_file(file)
         self.process_implementation(file)
-
         return module
 
     def execute_file(self, file):
         module = self.load_module(file)
         return module.execute(self)
 
-    def execute_expression(self, string):
-        module = self.process_expression(string)
+    def execute_expression(self, expression):
+        module = self.process_expression(expression)
         return module.execute(self)
+
+    def execute_expression_interactive(self, expression):
+        module = self.process_expression(expression)
+        if not hasattr(self, 'state'):
+            self.state = None
+        self.state = module.execute(self, self.state)
+        return self.state
 
     def subject(self, type, regexp=None):
         def decorator(func):
