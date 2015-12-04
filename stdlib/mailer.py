@@ -21,7 +21,7 @@ def send_email(subjects, args):
     mailServer.ehlo()
     mailServer.starttls()
     mailServer.ehlo()
-    mailServer.login()
+    mailServer.login('', '')
     mailServer.send_message(msg)
     mailServer.quit()
 

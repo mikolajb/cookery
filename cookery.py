@@ -1,6 +1,6 @@
 from cookery_parse import CookeryParser
 from cookery_lex import CookeryLexer
-from os import path, makedirs
+from os import path, makedirs, listdir
 from functools import wraps
 import ply.yacc as yacc
 import ply.lex as lex
@@ -8,6 +8,7 @@ import click
 import runpy
 import re
 import inspect
+from operator import methodcaller
 from exceptions import \
     WrongMatch, \
     WrongNumberOfArguments, \
@@ -16,6 +17,7 @@ from exceptions import \
 
 
 class Cookery:
+    STDLIB_PATH = 'stdlib'
 
     def __init__(self, debug_lexer=False, debug_parser=False):
         self.lexer = lex.lex(module=CookeryLexer(), debug=debug_lexer)
@@ -24,6 +26,11 @@ class Cookery:
         self.subjects = {}
         self.actions = {}
         self.conditions = {}
+        stdlib_path = path.join(path.dirname(path.abspath(__file__)),
+                                self.STDLIB_PATH)
+        for f in filter(methodcaller('endswith', '.py'),
+                        listdir(stdlib_path)):
+            self.process_implementation(path.join(stdlib_path, f))
 
     def process_expression(self, expression):
         m = self.parser.parse(expression,
@@ -74,12 +81,11 @@ class Cookery:
 
     def execute_file(self, file):
         module = self.load_module(file)
-
         return module.execute(self)
 
     def execute_expression(self, string):
         module = self.process_expression(string)
-        return module.execute(self, 'first value')
+        return module.execute(self)
 
     def subject(self, type, regexp=None):
         def decorator(func):

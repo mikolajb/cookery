@@ -1,0 +1,4 @@
+send_email {"to"      : "......",
+            "from"    : "......",
+            "subject" : "Results",
+            "body"    : "Results for language test"}.
