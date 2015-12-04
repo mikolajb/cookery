@@ -1,0 +1,10 @@
+{
+    "language": "cookery",
+    "display_name": "Cookery",
+    "argv": ["python",
+             "/home/mikolaj/praca/icookerypy/cookerykernel.py",
+             "-f",
+             "{connection_file}",
+             "--debug"
+            ]
+}
