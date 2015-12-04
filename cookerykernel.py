@@ -19,7 +19,7 @@ class CookeryKernel(Kernel):
     def do_execute(self, code, silent, store_history=True,
                    user_expressions=None, allow_stdin=False):
         if not silent:
-            res = self.cookery.execute_expression(code)
+            res = self.cookery.execute_expression_interactive(code)
 
             stream_content = {'name': 'stdout', 'text': repr(res)}
             self.send_response(self.iopub_socket, 'stream', stream_content)
