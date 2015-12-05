@@ -30,6 +30,16 @@ class CookeryKernel(Kernel):
                 'payload': [],
                 'user_expressions': {}}
 
+    def do_complete(self, code, cursor_pos):
+        self.log.debug("Completing: {}, at cursor pos: {}".format(code, cursor_pos))
+        self.log.debug("Sending: {}".format(code[0:cursor_pos]))
+        result = self.cookery.complete(code[0:cursor_pos])
+        return {'matches': result,
+                'cursor_start': cursor_pos,
+                'cursor_end': cursor_pos,
+                'metadata': {},
+                'status': 'ok'}
+
     def do_inspect(self, code, cursor_pos, detail_level=0):
         self.log.debug(code)
         self.log.debug(cursor_pos)
