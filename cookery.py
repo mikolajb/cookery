@@ -93,6 +93,57 @@ class Cookery:
         self.state = module.execute(self, self.state)
         return self.state
 
+    def complete(self, expression):
+        'Completes the code, todo: complete words, not only tokens.'
+
+        self.parser.parse(expression, lexer=self.lexer)
+        print(self.parser.action)
+        print(self.parser.statestack)
+        print(self.parser.symstack)
+        stack = self.parser.symstack[-1]
+        print(stack)
+        if stack not in ['include', '$end']:
+            print("looking for possibilities")
+            action = self.parser.action[self.parser.statestack[-1]]
+            possibilities = action.keys()
+            print("they are:", possibilities)
+            result = list(map(methodcaller('lower'),
+                              set(possibilities) &
+                              set(['IMPORT', 'AND', 'AS', '='])))
+
+            if len(self.conditions) > 0:
+                result += list(map(methodcaller('lower'),
+                                   set(possibilities) &
+                                   set(['IF', 'WITH'])))
+
+            if len(expression) > 0:
+                if not re.match(r'\s', expression[-1]):
+                    if 'END' in possibilities:
+                        return [' ', '.']
+                    else:
+                        return [' ']
+
+            for p in possibilities:
+                if p == 'ACTION':
+                    print("actions")
+                    result += self.actions.keys()
+                elif p == 'SUBJECT':
+                    result += self.subjects.keys()
+                elif p == 'CONDITION':
+                    result += self.conditions.keys()
+                # elif p == 'JSON':
+                #     result +=
+                # elif p == 'ACTION_ARGUMENT':
+                #     result +=
+                # elif p == 'SUBJECT_ARGUMENT':
+                #     result +=
+                # elif p == 'CONDITION_ARGUMENT':
+                #     result +=
+            return result
+        self.parser.restart()
+        self.lexer.begin('INITIAL')
+        return ""
+
     def subject(self, type, regexp=None):
         def decorator(func):
             @wraps(func)
@@ -175,7 +226,8 @@ class Cookery:
               default=False,
               help='Runs parser in debug mode')
 @click.pass_context
-def toolkit(ctx, config, grammar_file, print_config, debug_lexer, debug_parser):
+def toolkit(ctx,
+            config, grammar_file, print_config, debug_lexer, debug_parser):
     # print('toolkit', config, grammar_file, print_config)
     pass
 
