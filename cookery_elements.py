@@ -1,8 +1,9 @@
 from exceptions import NoImplementation
-
+import logging
 
 class Module:
     def __init__(self, imports, activities):
+        self.log = logging.getLogger('Cookery')
         self.imports = imports or []
         self.modules = {}
         for i in self.imports:
@@ -19,11 +20,13 @@ class Module:
         return value
 
     def pretty_print(self):
-        print('imports:')
+        res = ""
+        res += 'imports:\n'
         for i in self.imports:
-            print(i)
+            res += '- {}'.format(i)
         for a in self.activities:
-            a.pretty_print()
+            res += a.pretty_print()
+        return res
 
 
 class Activity:
@@ -71,37 +74,34 @@ class Activity:
         return result
 
     def pretty_print(self):
-        print('action:', self.action)
-        print('condition:', self.condition)
-        print('subjects:', len(self.subjects))
+        res = '''action: {}
+condition: {}
+subjects: {}'''.format(self.action,
+                       self.condition,
+                       len(self.subjects))
         if self.subjects:
-            print('subjects:')
+            res += 'subjects:'
             for s in self.subjects:
-                print(s)
+                res += str(s)
+        return res
 
 
-class Action:
+class Element:
     def __init__(self, name, arguments=[]):
         self.name = name
         self.arguments = arguments
 
     def __str__(self):
-        return self.name + ' ' + repr(self.arguments)
+        return '{}({})'.format(self.name, repr(self.arguments))
 
 
-class Subject:
-    def __init__(self, name, arguments=[]):
-        self.name = name
-        self.arguments = arguments or []
-
-    def __str__(self):
-        return self.name + ' ' + repr(self.arguments)
+class Action(Element):
+    pass
 
 
-class Condition:
-    def __init__(self, name, arguments=[]):
-        self.name = name
-        self.arguments = arguments or []
+class Subject(Element):
+    pass
 
-    def __str__(self):
-        return self.name + ' ' + repr(self.arguments)
+
+class Condition(Element):
+    pass

@@ -1,7 +1,10 @@
 from ply.lex import TOKEN
+import logging
 
 
 class CookeryLexer(object):
+
+    log = logging.getLogger('Cookery')
 
     keywords = ('import', 'and', 'if', 'with', 'as')
 
@@ -82,7 +85,6 @@ class CookeryLexer(object):
 
     def t_subjectargument_SUBJECT_ARGUMENT(self, t):
         r'(:?(?!(:?\.\s)|(:?\.\Z))[^ {])+'
-        print(repr(t.value))
         if t.value in CookeryLexer.keywords:
             t.type = t.value.upper()
             if t.type in ['IF', 'WITH']:
@@ -117,4 +119,4 @@ class CookeryLexer(object):
         t.lexer.lineno += t.value.count("\n")
 
     def t_ANY_error(self, t):
-        print("Illegal character '%s'" % t.value[0])
+        self.log.warning("Illegal character '%s'" % t.value[0])

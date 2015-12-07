@@ -8,6 +8,7 @@ import click
 import runpy
 import re
 import inspect
+import logging
 from operator import methodcaller
 from exceptions import \
     WrongMatch, \
@@ -19,7 +20,10 @@ from exceptions import \
 class Cookery:
     STDLIB_PATH = 'stdlib'
 
-    def __init__(self, debug_lexer=False, debug_parser=False):
+    def __init__(self, debug=False, debug_lexer=False,
+                 debug_parser=False, jupyter=False):
+        if not jupyter:
+            self.init_logging(debug)
         self.lexer = lex.lex(module=CookeryLexer(), debug=debug_lexer)
         self.debug_parser = debug_parser
         self.parser = yacc.yacc(module=CookeryParser())
@@ -32,15 +36,20 @@ class Cookery:
                         listdir(stdlib_path)):
             self.process_implementation(path.join(stdlib_path, f))
 
+    def init_logging(self, debug):
+        self.log = logging.getLogger('Cookery')
+        if debug:
+            logging.basicConfig(level=logging.DEBUG)
+
     def process_expression(self, expression):
         m = self.parser.parse(expression,
                               lexer=self.lexer,
                               debug=self.debug_parser)
-        m.pretty_print()
+        self.log.debug('module: {}'.format(m.pretty_print()))
         self.parser.restart()
         self.lexer.begin('INITIAL')
         self.process_imports(m)
-        print('imports:', m.modules)
+        self.log.debug('imports: {}'.format(m.modules))
         return m
 
     def process_imports(self, module):
@@ -97,16 +106,15 @@ class Cookery:
         'Completes the code, todo: complete words, not only tokens.'
 
         self.parser.parse(expression, lexer=self.lexer)
-        print(self.parser.action)
-        print(self.parser.statestack)
-        print(self.parser.symstack)
+        self.log.debug('complete action: {}'.format(self.parser.action))
+        self.log.debug('complete statestack: {}'.format(self.parser.statestack))
+        self.log.debug('complete symstack: {}'.format(self.parser.symstack))
         stack = self.parser.symstack[-1]
-        print(stack)
+        self.log.debug('stack: {}'.format(stack))
         if stack not in ['include', '$end']:
-            print("looking for possibilities")
             action = self.parser.action[self.parser.statestack[-1]]
             possibilities = action.keys()
-            print("they are:", possibilities)
+            self.log.debug("possibilities are: {}".format(possibilities))
             result = list(map(methodcaller('lower'),
                               set(possibilities) &
                               set(['IMPORT', 'AND', 'AS', '='])))
@@ -125,7 +133,6 @@ class Cookery:
 
             for p in possibilities:
                 if p == 'ACTION':
-                    print("actions")
                     result += self.actions.keys()
                 elif p == 'SUBJECT':
                     result += self.subjects.keys()
@@ -217,6 +224,10 @@ class Cookery:
               is_flag=True,
               default=False,
               help='Prints configuration and exits without executing.')
+@click.option('--debug',
+              is_flag=True,
+              default=False,
+              help='Runs Cookery in debug mode')
 @click.option('--debug-lexer',
               is_flag=True,
               default=False,
@@ -227,8 +238,12 @@ class Cookery:
               help='Runs parser in debug mode')
 @click.pass_context
 def toolkit(ctx,
-            config, grammar_file, print_config, debug_lexer, debug_parser):
-    # print('toolkit', config, grammar_file, print_config)
+            config,
+            grammar_file,
+            print_config,
+            debug,
+            debug_lexer,
+            debug_parser):
     pass
 
 
@@ -237,7 +252,8 @@ def toolkit(ctx,
 @click.pass_context
 def run(ctx, file):
     'Executes a file.'
-    cookery = Cookery(ctx.parent.params['debug_lexer'],
+    cookery = Cookery(ctx.parent.params['debug'],
+                      ctx.parent.params['debug_lexer'],
                       ctx.parent.params['debug_parser'])
     print('returned value:', cookery.execute_file(file))
 
@@ -332,7 +348,7 @@ def test():
         print("parsing:", expression)
         print()
         t = parser.parse(expression, lexer=lexer, debug=debug)
-        t.pretty_print()
+        print(t.pretty_print())
         parser.restart()
         lexer.begin('INITIAL')
 

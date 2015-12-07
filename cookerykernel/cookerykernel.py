@@ -1,6 +1,8 @@
 from ipykernel.kernelbase import Kernel
 from sys import path as syspath
-syspath.append('../cookerypy')
+from os.path import dirname, join, abspath
+from os import pardir
+syspath.insert(0, abspath(join(dirname(__file__),  pardir)))
 from cookery import Cookery
 
 
@@ -10,11 +12,12 @@ class CookeryKernel(Kernel):
     language = 'no-op'
     language_version = '0.1'
     language_info = {'mimetype': 'text/plain'}
-    banner = "Cookery banner"
+    banner = "Cookery kernel"
 
     def __init__(self, **kwargs):
         Kernel.__init__(self, **kwargs)
-        self.cookery = Cookery()
+        self.cookery = Cookery(jupyter=True)
+        self.cookery.log = self.log.getChild(self.implementation)
 
     def do_execute(self, code, silent, store_history=True,
                    user_expressions=None, allow_stdin=False):
@@ -31,7 +34,8 @@ class CookeryKernel(Kernel):
                 'user_expressions': {}}
 
     def do_complete(self, code, cursor_pos):
-        self.log.debug("Completing: {}, at cursor pos: {}".format(code, cursor_pos))
+        self.log.debug("Completing: {}, at cursor pos: {}".format(code,
+                                                                  cursor_pos))
         self.log.debug("Sending: {}".format(code[0:cursor_pos]))
         result = self.cookery.complete(code[0:cursor_pos])
         return {'matches': result,

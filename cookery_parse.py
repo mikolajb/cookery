@@ -1,9 +1,12 @@
 from cookery_lex import CookeryLexer
 import json
 from cookery_elements import Module, Activity, Action, Subject, Condition
+import logging
 
 
 class CookeryParser(object):
+
+    log = logging.getLogger('Cookery')
 
     tokens = CookeryLexer.tokens
 
@@ -146,13 +149,13 @@ class CookeryParser(object):
 
     def p_error(self, p):
         if p:
-            print("Syntax error at '%s'" % p.value)
+            self.log.warning("Syntax error at '%s'" % p.value)
         else:
-            print("Syntax error at EOF")
+            self.log.debug("Syntax error at EOF")
 
     def _load_json(self, data):
         try:
             return json.loads(data)
         except json.decoder.JSONDecodeError as e:
-            print('JSON syntax error', e)
+            self.log.warning('JSON syntax error {}'.format(e))
             return None

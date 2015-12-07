@@ -2,7 +2,7 @@
     "language": "cookery",
     "display_name": "Cookery",
     "argv": ["python",
-             "/home/mikolaj/praca/icookerypy/cookerykernel.py",
+             "/home/mikolaj/praca/cookery/cookerykernel/cookerykernel.py",
              "-f",
              "{connection_file}",
              "--debug"
