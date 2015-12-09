@@ -177,7 +177,9 @@ class Cookery:
                 parameters = len(inspect.signature(func).parameters)
 
                 if regexp == 'JSON':
-                    if parameters == 2:
+                    if parameters == 1:
+                        return func(arguments)
+                    elif parameters == 2:
                         return func(subjects, arguments)
                     else:
                         raise WrongNumberOfArguments()

@@ -154,6 +154,7 @@ class CookeryParser(object):
             self.log.debug("Syntax error at EOF")
 
     def _load_json(self, data):
+        self.log.debug('parsing JSON: {}'.format(data))
         try:
             return json.loads(data)
         except json.decoder.JSONDecodeError as e:

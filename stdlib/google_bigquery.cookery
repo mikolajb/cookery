@@ -1,0 +1,1 @@
+google_bigquery {"query": "SELECT * FROM [genomics-public-data:1000_genomes.sample_info] WHERE Sample = 'HG01377' LIMIT 10"}.
