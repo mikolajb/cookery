@@ -1,4 +1,4 @@
-from lisp_lex import CookeryLexer
+from .lisp_lex import CookeryLexer
 import logging
 from functools import reduce
 from operator import sub, mul, truediv

@@ -1,6 +1,6 @@
-from cookery_lex import CookeryLexer
+from .cookery_lex import CookeryLexer
 import json
-from cookery_elements import Module, Activity, Action, Subject, Condition
+from .cookery_elements import Module, Activity, Action, Subject, Condition
 import logging
 
 

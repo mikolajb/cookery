@@ -5,7 +5,7 @@ def google_bigquery(args):
     from apiclient import discovery
     from httplib2 import Http
 
-    json_key = json.load(open("..."))
+    json_key = json.load(open("Cookery-30137725a678.json"))
 
     credentials = SignedJwtAssertionCredentials(
         json_key['client_email'],
@@ -17,7 +17,7 @@ def google_bigquery(args):
     bigquery = discovery.build('bigquery', 'v2', http=http)
 
     query = args
-    req = bigquery.jobs().query(projectId='...',
+    req = bigquery.jobs().query(projectId='symbolic-button-852',
                                 body=query)
 
     result = req.execute()

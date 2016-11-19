@@ -1,5 +1,5 @@
-/__pycache__/
-/parser.out
-/parsetab.py
-/Cookery*.json
+__pycache__
+/cookery/parser.out
+/cookery/parsetab.py
+/cookery/Cookery*.json
 /.ipynb_checkpoints/

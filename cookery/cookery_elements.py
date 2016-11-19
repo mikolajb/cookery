@@ -1,5 +1,5 @@
-from exceptions import NoImplementation
 import logging
+
 
 class Module:
     def __init__(self, imports, activities):
@@ -53,7 +53,7 @@ class Activity:
                 raise Exception()
         if self.condition:
             if self.condition.name not in implementation.conditions:
-                raise NoImplementation()
+                raise NotImplementedError()
             condition_func = implementation.conditions[self.condition.name]
             subjects = [condition_func(s) for s in subjects]
         if len(subjects) == 0 and value:
@@ -63,7 +63,7 @@ class Activity:
             if self.action.name in self.module.modules.keys():
                 return self.module.modules[self.action.name]. \
                     execute(implementation, subjects)
-            raise NoImplementation()
+            raise NotImplementedError()
 
         if isinstance(self.action.arguments, list):
             self.action.arguments = " ".join(self.action.arguments)
