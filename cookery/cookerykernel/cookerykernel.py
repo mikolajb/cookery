@@ -1,9 +1,5 @@
 from ipykernel.kernelbase import Kernel
-from sys import path as syspath
-from os.path import dirname, join, abspath
-from os import pardir
-syspath.insert(0, abspath(join(dirname(__file__),  pardir)))
-from cookery import Cookery
+from cookery.cookery import Cookery
 
 
 class CookeryKernel(Kernel):

@@ -50,10 +50,14 @@ class Activity:
             elif self.subjects[i].name in self.module.variables:
                 subjects += self.module.variables[self.subjects[i].name]
             else:
-                raise Exception()
+                raise NotImplementedError(
+                    "No subject {}".format(self.subjects[i].name)
+                )
         if self.condition:
             if self.condition.name not in implementation.conditions:
-                raise NotImplementedError()
+                raise NotImplementedError(
+                    "No condition {}".format(self.condition.name)
+                )
             condition_func = implementation.conditions[self.condition.name]
             subjects = [condition_func(s) for s in subjects]
         if len(subjects) == 0 and value:
@@ -63,7 +67,9 @@ class Activity:
             if self.action.name in self.module.modules.keys():
                 return self.module.modules[self.action.name]. \
                     execute(implementation, subjects)
-            raise NotImplementedError()
+            raise NotImplementedError(
+                "No action {}".format(self.action.name)
+            )
 
         if isinstance(self.action.arguments, list):
             self.action.arguments = " ".join(self.action.arguments)
