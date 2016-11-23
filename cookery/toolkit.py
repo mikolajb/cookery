@@ -38,7 +38,10 @@ def toolkit(ctx,
             debug,
             debug_lexer,
             debug_parser):
-    pass
+    ctx.obj = {}
+    ctx.obj['debug'] = debug
+    ctx.obj['debug_lexer'] = debug_lexer
+    ctx.obj['debug_parser'] = debug_parser
 
 
 @toolkit.command()
@@ -57,8 +60,8 @@ def run(ctx, file):
 @click.pass_context
 def eval(ctx, expression):
     'Evaluates an expression.'
-    c = Cookery()
-    return c.process_expression(expression)
+    c = Cookery(**ctx.obj)
+    click.echo(c.execute_expression(expression))
 
 
 @toolkit.command()
