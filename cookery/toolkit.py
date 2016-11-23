@@ -71,10 +71,18 @@ def new(ctx, name):
 
     empty_project = {
         '{}.py'.format(f_name):
-        'action("test", :out) do |data|\n  puts "Just a test, passing data '
-        'from subject"\n  data\nend\n\nsubject("Test", nil, "test") do\n  '
-        '"fake result".bytes.map { |i| (i >= 97 and i <= 122 and rand > 0.5) '
-        '? i - 32 : i }.pack("c*")\nend',
+        "from random import randint\n"
+        "\n"
+        "@cookery.action()\n"
+        "def test(subject):\n"
+        "    print(\"Just a test, passing data from subject.\")\n"
+        "    return subject\n"
+        "\n"
+        "@cookery.subject(\"in\")\n"
+        "def test():\n"
+        "    return \"\".join(map(lambda i: randint(0, 1) and i.upper() or i,"
+        "\n"
+        "                       \"fake result\"))\n",
         '{}.cookery'.format(f_name): 'test Test.',
         '{}.toml'.format(f_name): '[actions.test]\njust_an_example = true',
     }
