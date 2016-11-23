@@ -10,9 +10,9 @@ import inspect
 import logging
 from operator import methodcaller
 from .exceptions import \
-    WrongMatch, \
-    WrongNumberOfArguments, \
-    CannotImportModule
+    CookeryWrongMatch, \
+    CookeryWrongNumberOfArguments, \
+    CookeryCannotImportModule
 
 
 class Cookery:
@@ -39,50 +39,63 @@ class Cookery:
         if debug:
             logging.basicConfig(level=logging.DEBUG)
 
-    def process_expression(self, expression):
+    def process_expression(self, expression, relative=None):
         m = self.parser.parse(expression,
                               lexer=self.lexer,
                               debug=self.debug_parser)
         self.log.debug('module: {}'.format(m.pretty_print()))
         self.parser.restart()
         self.lexer.begin('INITIAL')
-        self.process_imports(m)
+        self.process_imports(m, relative=relative)
         self.log.debug('imports: {}'.format(m.modules))
         return m
 
-    def process_imports(self, module):
+    def process_imports(self, module, relative=None):
         for m in module.modules.keys():
-            module.modules[m] = self.load_module(module.modules[m])
+            module.modules[m] = self.load_module(module.modules[m], relative)
             self.process_imports(module.modules[m])
 
-    def process_file(self, file):
+    def process_file(self, file, relative=None):
         "Processes Cookery file"
         if isinstance(file, str):
             name, ext = path.splitext(file)
             if ext == '' or ext == '.cookery':
+                files = []
                 file = name + '.cookery'
-                if path.exists(file):
-                    file = open(file, 'r')
+                files.append(file)
+                if relative is not None:
+                    files.append(path.join(relative, file))
+                for file in files:
+                    if path.exists(file):
+                        file = open(file, 'r')
+                        break
                 else:
-                    raise CannotImportModule
+                    raise CookeryCannotImportModule(file)
             else:
-                raise CannotImportModule
-        return self.process_expression(file.read())
+                raise CookeryCannotImportModule(file)
+        return self.process_expression(file.read(),
+                                       relative=path.dirname(file.name))
 
-    def process_implementation(self, file):
+    def process_implementation(self, file, relative=None):
         "Processes Cookery middleware file"
+        implementations = []
         implementation = path.splitext(
             file if isinstance(file, str) else file.name)[0] + '.py'
-        if path.exists(implementation):
-            runpy.run_path(implementation, {'cookery': self})
+        implementations.append(implementation)
+        if relative is not None:
+            implementations.append(path.join(relative, implementation))
+        for implementation in implementations:
+            if path.exists(implementation):
+                runpy.run_path(implementation, {'cookery': self})
+                break
         else:
-            raise NotImplementedError()
+            raise NotImplementedError(implementation)
 
         return implementation
 
-    def load_module(self, file):
-        module = self.process_file(file)
-        self.process_implementation(file)
+    def load_module(self, file, relative=None):
+        module = self.process_file(file, relative)
+        self.process_implementation(file, relative)
         return module
 
     def execute_file(self, file):
@@ -104,9 +117,12 @@ class Cookery:
         'Completes the code, todo: complete words, not only tokens.'
 
         self.parser.parse(expression, lexer=self.lexer)
-        self.log.debug('complete action: {}'.format(self.parser.action))
-        self.log.debug('complete statestack: {}'.format(self.parser.statestack))
-        self.log.debug('complete symstack: {}'.format(self.parser.symstack))
+        self.log.debug('complete action: {}'.
+                       format(self.parser.action))
+        self.log.debug('complete statestack: {}'.
+                       format(self.parser.statestack))
+        self.log.debug('complete symstack: {}'.
+                       format(self.parser.symstack))
         stack = self.parser.symstack[-1]
         self.log.debug('stack: {}'.format(stack))
         if stack not in ['include', '$end']:
@@ -180,16 +196,16 @@ class Cookery:
                     elif parameters == 2:
                         return func(subjects, arguments)
                     else:
-                        raise WrongNumberOfArguments()
+                        raise CookeryWrongNumberOfArguments()
                 if regexp:
                     matched = re.match(regexp, arguments)
                     if matched:
                         if parameters == 1 + len(matched.groups()):
                             return func(subjects, *matched.groups())
                         else:
-                            raise WrongNumberOfArguments()
+                            raise CookeryWrongNumberOfArguments()
                     else:
-                        raise WrongMatch()
+                        raise CookeryWrongMatch()
                 return func(subjects, *([None] * (parameters - 1)))
             self.actions[func.__name__] = wrapper
             return wrapper

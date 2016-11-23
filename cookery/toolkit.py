@@ -1,6 +1,10 @@
 import click
 from os import path, makedirs
 from .cookery import Cookery
+import ply.yacc as yacc
+import ply.lex as lex
+from .cookery_lex import CookeryLexer
+from .cookery_parse import CookeryParser
 
 
 @click.group()

@@ -1,10 +1,11 @@
-class WrongMatch(Exception):
+class CookeryWrongMatch(Exception):
     pass
 
 
-class WrongNumberOfArguments(Exception):
+class CookeryWrongNumberOfArguments(Exception):
     pass
 
 
-class CannotImportModule(Exception):
-    pass
+class CookeryCannotImportModule(Exception):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)

@@ -11,21 +11,19 @@ def display(subject):
 
 @cookery.action()
 def google_prediction(subject, args):
-    from oauth2client.client import SignedJwtAssertionCredentials
-    import json
+    from oauth2client.service_account import ServiceAccountCredentials
     from apiclient import discovery
     from httplib2 import Http
 
-    json_key = json.load(open("..."))
+    scopes = ['https://www.googleapis.com/auth/prediction']
+    credentials = ServiceAccountCredentials.from_json_keyfile_name(
+        "...",
+        scopes
+    )
 
-    credentials = SignedJwtAssertionCredentials(
-        json_key['client_email'],
-        json_key['private_key'].encode(),
-        'https://www.googleapis.com/auth/prediction')
-
-    http = Http()
-    credentials.authorize(http)
-    prediction = discovery.build('prediction', 'v1.6', http=http)
+    http_auth = Http()
+    credentials.authorize(http_auth)
+    prediction = discovery.build('prediction', 'v1.6', http=http_auth)
     models = prediction.trainedmodels()
     results = []
     for data in subject:
