@@ -16,6 +16,7 @@ class CookeryLexer(object):
         "INTEGER",
         "OPERATOR",
         "PATH",
+        "STRING",
     ] + [k.upper() for k in keywords]
 
     states = (
@@ -64,6 +65,10 @@ class CookeryLexer(object):
     def t_INTEGER(self, t):
         r'(?:[1-9]+[0-9]*)|0+'
         t.value = int(t.value)
+        return t
+
+    def t_STRING(self, t):
+        r'(?:\'[^\']*\')|(?:"[^"]*")'
         return t
 
     t_ANY_ignore = ' \t'
