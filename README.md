@@ -4,6 +4,8 @@ Cookery is a framework for designing Domain Specific Languages for scientific ap
 
 ## How to install ##
 
+You will need to use Python3. I tested it with version 3.5.2.
+
 Clone the repository:
 
 ```
@@ -13,7 +15,7 @@ git clone https://github.com/mikolajb/cookery.git
 and install using pip
 
 ```
-pip install --user .
+pip install --user .  # be sure to use the one associated with python3 (pip3?)
 ```
 
 ## How to use ##

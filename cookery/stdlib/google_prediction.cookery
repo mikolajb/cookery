@@ -1,10 +1,10 @@
 import do as do
 import mailer as mail
 
-do RemoteFile http://localhost:8080/files/english.txt.
+do RemoteFile http://localhost:8080/english.txt.
 A = google_prediction.
-do RemoteFile http://localhost:8080/files/french.txt.
+do RemoteFile http://localhost:8080/french.txt.
 B = google_prediction.
-do RemoteFile http://localhost:8080/files/spanish.txt.
+do RemoteFile http://localhost:8080/spanish.txt.
 C = google_prediction.
 mail A and B and C.
