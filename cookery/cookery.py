@@ -43,6 +43,8 @@ class Cookery:
         m = self.parser.parse(expression,
                               lexer=self.lexer,
                               debug=self.debug_parser)
+        if relative is not None:
+            m.execution_path = path.abspath(relative)
         self.log.debug('module: {}'.format(m.pretty_print()))
         self.parser.restart()
         self.lexer.begin('INITIAL')

@@ -1,4 +1,5 @@
 import logging
+from os import path, chdir
 
 
 class Module:
@@ -11,16 +12,18 @@ class Module:
 
         self.activities = activities or []
         self.variables = {}
+        self.execution_path = None
 
     def execute(self, implementation, value=None):
         for a in self.activities:
             a.module = self
         for a in self.activities:
-            value = a.execute(implementation, value)
+            value = a.execute(implementation, value, self.execution_path)
         return value
 
     def pretty_print(self):
         res = ""
+        res += "execution path: {}\n".format(self.execution_path)
         res += 'imports:\n'
         for i in self.imports:
             res += '- {}'.format(i)
@@ -37,15 +40,18 @@ class Activity:
         self.condition = None
         self.module = None
 
-    def execute(self, implementation, value):
+    def execute(self, implementation, value, execution_path=None):
         subjects = []
+        old_execution_path = path.abspath(path.dirname(__file__))
         for i in range(len(self.subjects)):
             if self.subjects[i].name in implementation.subjects:
+                chdir(execution_path)
                 subjects.append(
                     implementation.subjects[self.subjects[i].name](
-                        " ".join(self.subjects[i].arguments)
+                        " ".join(self.subjects[i].arguments),
                     )
                 )
+                chdir(old_execution_path)
             elif self.subjects[i].name in self.module.variables:
                 subjects += [self.module.variables[self.subjects[i].name]]
             else:
