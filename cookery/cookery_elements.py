@@ -39,7 +39,6 @@ class Activity:
 
     def execute(self, implementation, value):
         subjects = []
-        self.subjects
         for i in range(len(self.subjects)):
             if self.subjects[i].name in implementation.subjects:
                 subjects.append(
@@ -48,7 +47,7 @@ class Activity:
                     )
                 )
             elif self.subjects[i].name in self.module.variables:
-                subjects += self.module.variables[self.subjects[i].name]
+                subjects += [self.module.variables[self.subjects[i].name]]
             else:
                 raise NotImplementedError(
                     "No subject {}".format(self.subjects[i].name)

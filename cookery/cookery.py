@@ -169,13 +169,16 @@ class Cookery:
         def decorator(func):
             @wraps(func)
             def wrapper(arguments):
+                if regexp is None:
+                    return func()
                 if regexp == 'JSON':
                     return func(arguments)
                 matched = re.match(regexp, arguments)
                 if matched:
                     return func(*matched.groups())
                 else:
-                    pass  # handle unmached data
+                    self.log.error("Subject {} data unmatched".
+                                   format(func.__name__))
                 return func()
             # changes func name from foo_bar to FooBar
             func_name = "".join([e.capitalize() for e in
