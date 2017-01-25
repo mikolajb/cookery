@@ -5,6 +5,7 @@ import ply.yacc as yacc
 import ply.lex as lex
 from .cookery_lex import CookeryLexer
 from .cookery_parse import CookeryParser
+import json
 
 
 @click.group()
@@ -98,6 +99,31 @@ def new(ctx, name):
         with open(path.join(name, file), 'w') as f:
             f.write(content)
 
+
+@toolkit.command()
+@click.option('--uninstall',
+              is_flag=True,
+              default=False,
+              help='Uninstall Cookery Jupyter kernel.')
+@click.pass_context
+def kernel(ctx, uninstall):
+    'Install Jupyter kernel'
+    import jupyter_client
+
+    kernel_path = path.join(
+        path.dirname(path.abspath(__file__)),
+        "cookerykernel",
+    )
+    ksm = jupyter_client.kernelspec.KernelSpecManager()
+
+    if uninstall:
+        ksm.remove_kernel_spec("cookery")
+    else:
+        ksm.install_kernel_spec(
+            kernel_path,
+            kernel_name="cookery",
+            user=True,
+        )
 
 @toolkit.command()
 @click.pass_context

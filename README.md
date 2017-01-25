@@ -18,6 +18,16 @@ and install using pip
 pip install --user .  # be sure to use the one associated with python3 (pip3?)
 ```
 
+### Integration with Jupyter Notebook
+
+If you have a Jupyter Notebook installed in your system, you can take the advantage from Cookery kernel which is supplied with cookery. You can register a kernel with a command:
+
+```
+cookery kernel
+```
+
+Then, if you start `jupyter notebook`, you can select "Cookery" as a kernel and execute Cookery scripts in a browser.
+
 ## How to use ##
 
 First, without creating any files, you can evaluate cookery expressions in the following way:

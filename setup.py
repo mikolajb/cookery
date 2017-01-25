@@ -7,9 +7,13 @@ setup(name="cookery",
       url="http://github.com/mikolajb/cookery",
       scripts=['scripts/cookery'],
       packages=["cookery"],
+      py_modules=["cookerykernel"],
       package_data={
-          "cookery": ["stdlib/*.py",
-                      "stdlib/*.cookery"]
+          "cookery": [
+              "stdlib/*.py",
+              "stdlib/*.cookery",
+              "cookerykernel/kernel.json",
+          ]
       },
       install_requires=[
           "click",
