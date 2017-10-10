@@ -4,7 +4,7 @@ from os import path, chdir
 
 class Module:
     def __init__(self, imports, activities):
-        self.log = logging.getLogger('Cookery')
+        self.log = logging.getLogger("Cookery %s" % type(self).__name__)
         self.imports = imports or []
         self.modules = {}
         for i in self.imports:
@@ -15,10 +15,12 @@ class Module:
         self.execution_path = None
 
     def execute(self, implementation, value=None):
+        self.log.debug("executing activities")
         for a in self.activities:
             a.module = self
         for a in self.activities:
             value = a.execute(implementation, value, self.execution_path)
+            self.log.debug("value form an activity %s" % str(value))
         return value
 
     def pretty_print(self):
@@ -34,6 +36,7 @@ class Module:
 
 class Activity:
     def __init__(self):
+        self.log = logging.getLogger("Cookery %s" % self.__class__)
         self.variable = None
         self.action = None
         self.subjects = []
@@ -41,6 +44,7 @@ class Activity:
         self.module = None
 
     def execute(self, implementation, value, execution_path=None):
+        self.log.debug("Executing %s" % self)
         subjects = []
         old_execution_path = path.abspath(path.dirname(__file__))
         for i in range(len(self.subjects)):
@@ -96,9 +100,15 @@ subjects: {}'''.format(self.action,
                 res += str(s)
         return res
 
+    def __str__(self):
+        return "%s %s" % (self.action, repr(self.subjects))
+
 
 class Element:
     def __init__(self, name, arguments=[]):
+        self.log = logging.getLogger(
+            "Cookery %s %s" % (type(self).__name__, name)
+        )
         self.name = name
         self.arguments = arguments
 

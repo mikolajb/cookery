@@ -25,6 +25,8 @@ class Cookery:
         self.lexer = lex.lex(module=CookeryLexer(), debug=debug_lexer)
         self.debug_parser = debug_parser
         self.parser = yacc.yacc(module=CookeryParser())
+        self.protocols = {}
+        self.protocol_instances = {}
         self.subjects = {}
         self.actions = {}
         self.conditions = {}
@@ -43,6 +45,8 @@ class Cookery:
         m = self.parser.parse(expression,
                               lexer=self.lexer,
                               debug=self.debug_parser)
+        if m is None:
+            return None
         if relative is not None:
             m.execution_path = path.abspath(relative)
         self.log.debug('module: {}'.format(m.pretty_print()))
@@ -50,6 +54,7 @@ class Cookery:
         self.lexer.begin('INITIAL')
         self.process_imports(m, relative=relative)
         self.log.debug('imports: {}'.format(m.modules))
+        self.__instantiate_protocols()
         return m
 
     def process_imports(self, module, relative=None):
@@ -97,21 +102,31 @@ class Cookery:
 
     def load_module(self, file, relative=None):
         module = self.process_file(file, relative)
-        self.process_implementation(file, relative)
+        try:
+            self.process_implementation(file, relative)
+        except NotImplementedError:
+            pass
         return module
 
     def execute_file(self, file):
         module = self.load_module(file)
+        self.__instantiate_protocols()
         return module.execute(self)
 
     def execute_expression(self, expression):
         module = self.process_expression(expression)
+        if module is None:
+            return "syntax error"
+        self.__instantiate_protocols()
         return module.execute(self)
 
     def execute_expression_interactive(self, expression):
         module = self.process_expression(expression)
+        if module is None:
+            return "syntax error"
         if not hasattr(self, 'state'):
             self.state = None
+        self.__instantiate_protocols()
         self.state = module.execute(self, self.state)
         return self.state
 
@@ -189,29 +204,57 @@ class Cookery:
             return wrapper
         return decorator
 
-    def action(self, regexp=None):
+    def __proto_name(self, protocol):
+        return protocol.__name__
+
+    def __add_proto(self, protocol):
+        self.log.debug("adding protocol: %s" % self.__proto_name(protocol))
+        if self.__proto_name(protocol) in self.protocols:
+            return self.protocols[self.__proto_name(protocol)]
+        else:
+            self.protocols[self.__proto_name(protocol)] = protocol
+            return protocol
+
+    def action(self, regexp=None, protocol=None):
+        print("REGEXP", regexp, "PROTOCOL", protocol)
+        if protocol is not None:
+            protocol = self.__add_proto(protocol)
+
         def decorator(func):
             @wraps(func)
             def wrapper(subjects=None, arguments=None):
                 parameters = len(inspect.signature(func).parameters)
 
+                function_args = []
+
+                if protocol is not None:
+                    function_args.append(
+                        self.protocol_instances[self.__proto_name(protocol)]
+                    )
+
                 if regexp == 'JSON':
-                    if parameters == 1:
-                        return func(arguments)
-                    elif parameters == 2:
-                        return func(subjects, arguments)
+                    if parameters == len(function_args) + 1:
+                        function_args.append(arguments)
+                    elif parameters == len(function_args) + 2:
+                        function_args += [subjects, arguments]
                     else:
                         raise CookeryWrongNumberOfArguments()
-                if regexp:
+                elif regexp is not None:
                     matched = re.match(regexp, arguments)
                     if matched:
-                        if parameters == 1 + len(matched.groups()):
-                            return func(subjects, *matched.groups())
+                        print(function_args, matched.groups(), parameters)
+                        if parameters == len(function_args) + \
+                           len(matched.groups()) + 1:
+                            function_args.append(subjects)
+                            function_args += matched.groups()
                         else:
                             raise CookeryWrongNumberOfArguments()
                     else:
                         raise CookeryWrongMatch()
-                return func(subjects, *([None] * (parameters - 1)))
+                return func(*(
+                    function_args +
+                    [None] * (parameters - len(function_args))
+                ))
             self.actions[func.__name__] = wrapper
             return wrapper
         return decorator
@@ -232,3 +275,9 @@ class Cookery:
             self.conditions[func.__name__] = func
             return wrapper
         return decorator
+
+    def __instantiate_protocols(self):
+        for name, impl in self.protocols.items():
+            if name in self.protocol_instances:
+                continue
+            self.protocol_instances[name] = impl()

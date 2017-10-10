@@ -1,10 +1,24 @@
 # Cookery #
 
+## Features
+
+- Integration with Jupyter Notebook
+- connect to cloud
+- another example with services
+- three layers of Cookery
+  - guideline for users
+  - guideline for developers
+  - example on how to implement the lower layer
+  - ask Kasia what happened with this student
+  - write something
+
+## Video
+
 Cookery is a framework for designing Domain Specific Languages for scientific applications in a cloud environment.
 
 ## How to install ##
 
-You will need to use Python3. I tested it with version 3.5.2.
+You will need to use Python3. I tested it with version 3.6.
 
 Clone the repository:
 
