@@ -1,5 +1,6 @@
 from ipykernel.kernelbase import Kernel
 from cookery.cookery import Cookery
+from IPython.display import Image
 
 
 class CookeryKernel(Kernel):
@@ -24,7 +25,8 @@ class CookeryKernel(Kernel):
             res = self.cookery.execute_expression_interactive(code)
 
             stream_content = {'name': 'stdout', 'text': repr(res)}
-            self.send_response(self.iopub_socket, 'stream', stream_content)
+            # self.send_response(self.iopub_socket, 'stream', stream_content)
+            self.send_response(self.iopub_socket, 'stream', Image(url="https://www.google.de/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png"))
 
         return {'status': 'ok',
                 # The base class increments the execution count
