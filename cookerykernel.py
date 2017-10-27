@@ -7,7 +7,10 @@ class CookeryKernel(Kernel):
     implementation_version = '1.0'
     language = 'no-op'
     language_version = '0.1'
-    language_info = {'mimetype': 'text/plain'}
+    language_info = {'name': 'cookery',
+                     'mimetype': 'text/plain',
+                     'file_extension': '.cookery'}
+
     banner = "Cookery kernel"
 
     def __init__(self, **kwargs):
