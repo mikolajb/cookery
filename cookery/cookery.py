@@ -15,13 +15,14 @@ from .exceptions import \
     CookeryCannotImportModule
 
 
-class Cookery:
+class Cookery(object):
     STDLIB_PATH = 'stdlib'
 
     def __init__(self, debug=False, debug_lexer=False,
                  debug_parser=False, jupyter=False):
         if not jupyter:
             self.init_logging(debug)
+        self.init_logging(debug)
         self.lexer = lex.lex(module=CookeryLexer(), debug=debug_lexer)
         self.debug_parser = debug_parser
         self.parser = yacc.yacc(module=CookeryParser())
@@ -245,12 +246,15 @@ class Cookery:
                         print(function_args, matched.groups(), parameters)
                         if parameters == len(function_args) + \
                            len(matched.groups()) + 1:
-                            function_args.append(subjects)
+                            function_args += subjects
                             function_args += matched.groups()
                         else:
                             raise CookeryWrongNumberOfArguments()
                     else:
                         raise CookeryWrongMatch()
+                else:
+                    if subjects is not None and len(subjects) > 0:
+                        function_args += subjects
                 return func(*(
                     function_args +
                     [None] * (parameters - len(function_args))
