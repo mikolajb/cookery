@@ -1,11 +1,15 @@
 import click
-from os import path, makedirs
+from os import path, makedirs, walk
 from .cookery import Cookery
 import ply.yacc as yacc
 import ply.lex as lex
 from .cookery_lex import CookeryLexer
 from .cookery_parse import CookeryParser
-import json
+from tempfile import TemporaryDirectory
+from zipfile import ZipFile
+from io import BytesIO
+from shutil import copy as copy_file
+from botocore.exceptions import ClientError
 
 
 @click.group()
@@ -124,6 +128,126 @@ def kernel(ctx, uninstall):
             kernel_name="cookery",
             user=True,
         )
+
+
+@toolkit.command("lambda")
+@click.option("--name", help=".")
+@click.option(
+    "--interval",
+    type=(
+        int,
+        click.Choice(["minute", "minutes", "hour", "hours", "day", "days"])
+    ),
+    default=(1, "day"),
+    help="""Interval: Value Unit
+Value can be a positive integer, Unit can be minute(s), hour(s), or day(s)."""
+)
+@click.option("--key", envvar='ACCESS_KEY', help="Amazon Access Key.")
+@click.option("--secret", envvar='SECRET_KEY', help="Amazon Secret Key.")
+@click.option("--region", envvar='REGION', default="eu-central-1", help="Amazon Region.")
+@click.option("--arn", envvar='ARN', help="Amazon user ARN.")
+@click.argument('file_name', type=click.Path(
+    exists=True,
+    dir_okay=False,
+    readable=True,
+    resolve_path=True
+))
+@click.pass_context
+def amazon_lambda(ctx, name, interval, key, secret, region, arn, file_name):
+    import boto3
+    import pip
+
+    handler_file = "lambda"
+    handler_function = "lambda_handler"
+
+    if not path.exists(file_name):
+        print("no such module", file_name)
+        return
+
+    print([key, secret, region, arn])
+    if any([i is None for i in [key, secret, region, arn]]):
+        for param, key in [(key, "key"), (secret, "secret"), (region, "region"), (arn, "arn")]:
+            if param is None:
+                print("amazon", key, "is not provided")
+
+    if name is None:
+        name = path.splitext(path.basename(file_name))[0]
+
+    # temporary file to keep all the data sent to amazon lambda
+    pkg_temp = TemporaryDirectory(prefix="cookery-lambda-", suffix=name)
+    # cookery framework path, used in pip command
+    cookery_path = path.join(path.dirname(path.realpath(__file__)), "..")
+    pip.main(["install", cookery_path, "-t", pkg_temp.name])
+
+    copy_file(file_name, pkg_temp.name)
+    cookery_module, _ext = path.splitext(file_name)
+    for f in [cookery_module + ext for ext in [".py", ".toml"]]:
+        if path.exists(f):
+            copy_file(f, pkg_temp.name)
+
+    with open(path.join(pkg_temp.name, f"{handler_file}.py"), "w") as f:
+        f.write("from cookery.cookery import Cookery\n\n\n"
+                f"def {handler_function}(event, context):\n"
+                f"    print('returned value:', Cookery().execute_file(\"{name}\"))\n"
+                "    return {'message': \"it works!\"}\n")
+
+    boto_args = {
+        "aws_access_key_id": key,
+        "aws_secret_access_key": secret,
+        "region_name": region
+    }
+    lambda_client = boto3.client("lambda", **boto_args)
+    events_client = boto3.client("events", **boto_args)
+
+    buf = BytesIO()
+    # buf = open("/tmp/test.zip", "wb")
+    with ZipFile(buf, "w") as f:
+        for root, _dirs, files in walk(pkg_temp.name):
+            for file in files:
+                filename = path.join(root, file)
+                arcname = filename[len(pkg_temp.name):]
+                f.write(filename, arcname)
+
+    try:
+        lambda_client.create_function(
+            FunctionName=name,
+            Runtime="python3.6",
+            Role=arn,
+            Handler=f"{handler_file}.{handler_function}",
+            Code={"ZipFile": buf.getvalue()},
+            Timeout=10,
+            MemorySize=128,
+            Publish=False,
+        )
+        function_arn = lambda_client.get_function(
+            FunctionName=name
+        )["Configuration"]["FunctionArn"]
+        events_client.put_rule(
+            Name=f"rule-{name}",
+            ScheduleExpression="rate(%d %s)" % interval,
+            State="ENABLED",
+            Description=f"Run {name} every %d %s." % interval,
+            RoneArn=arn,
+        )
+        events_client.put_targets(
+            Rule=f"rule-{name}",
+            Targets=[{
+                "Id": name,
+                "Arn": function_arn
+            }]
+        )
+    except ClientError as e:
+        if e.response['Error']['Code'] == "ResourceConflictException":
+            print(f"function {name} already exists, updating...")
+            lambda_client.update_function_code(
+                FunctionName=name,
+                ZipFile=buf.getvalue(),
+                Publish=False,
+            )
+        else:
+            print(e)
+
+
 
 @toolkit.command()
 @click.pass_context
